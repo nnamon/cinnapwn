@@ -3,7 +3,8 @@
 import argparse
 import json
 import asyncio
-from modules import modules
+import signal
+from lib.modules import modules
 from concurrent.futures import ThreadPoolExecutor
 
 class Cinnapwn:
@@ -15,6 +16,15 @@ class Cinnapwn:
         self.burst_worker = ThreadPoolExecutor(max_workers=attack_threads)
         self.loop = asyncio.get_event_loop()
         self.detect_interval = detect_interval
+        self.hook_signal()
+
+    def hook_signal(self):
+        signal.signal(signal.SIGINT, self.signal_handler)
+
+    def signal_handler(self, signum, frame):
+        self.loop.stop()
+        self.burst_worker.shutdown(wait=False)
+        print("Stopping")
 
     def run(self):
         for i in modules.MODULES:
@@ -38,9 +48,10 @@ def main():
                                      " for CDDC 2016")
     parser.add_argument("--targets", default="targets.json",
                         help="Specify a target file (in json)")
+    parser.add_argument("--interval", default=2.0, type=float, help="Tick rate")
     args = parser.parse_args()
 
-    cin = Cinnapwn(targetdisk=args.targets)
+    cin = Cinnapwn(targetdisk=args.targets, detect_interval=args.interval)
     cin.run()
 
 
