@@ -6,6 +6,11 @@ import asyncio
 import signal
 from lib.modules import modules
 from concurrent.futures import ThreadPoolExecutor
+from lib.utils import common
+import pwnlib.context
+import http.server
+import socketserver
+import os
 
 class Cinnapwn:
 
@@ -13,10 +18,23 @@ class Cinnapwn:
         with open(targetdisk, 'r') as target_file:
             self.targets = json.loads(target_file.read())
 
-        self.burst_worker = ThreadPoolExecutor(max_workers=attack_threads)
+        self.burst_worker = ThreadPoolExecutor(max_workers=attack_threads + 1)
         self.loop = asyncio.get_event_loop()
         self.detect_interval = detect_interval
         self.hook_signal()
+        self.setup_server()
+
+    def setup_server(self):
+        Handler = http.server.SimpleHTTPRequestHandler
+        self.httpd = socketserver.TCPServer(("", common.http_port), Handler)
+
+    def run_http_server(self):
+        # Always expected to run in the resources context, since there is no
+        # need for any other location. Also, safety.
+        os.chdir("./resources")
+        sa = self.httpd.socket.getsockname()
+        print("Serving HTTP on", sa[0], "port", sa[1], "...")
+        self.httpd.serve_forever()
 
     def hook_signal(self):
         signal.signal(signal.SIGINT, self.signal_handler)
@@ -24,9 +42,12 @@ class Cinnapwn:
     def signal_handler(self, signum, frame):
         self.loop.stop()
         self.burst_worker.shutdown(wait=False)
+        self.httpd.server_close()
         print("Stopping")
 
     def run(self):
+        self.loop.run_in_executor(self.burst_worker,
+                                  self.run_http_server)
         for i in modules.MODULES:
             for j in self.targets:
                 self.loop.call_soon(self.delay_cb, j, i)

@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+EXPLOIT=./exploit
+GCC=/usr/bin/gcc
+
+if [ -x $GCC ]; then
+	if [ -x $EXPLOIT ]; then
+		rm -f $EXPLOIT
+	fi
+
+	MACHINE=$(uname -m)
+
+	if [ "$MACHINE" = "x86_64" -o "$MACHINE" = "ppc64" ]; then
+		$GCC -Wall -m64 -o $EXPLOIT $EXPLOIT.c
+	else
+		$GCC -Wall -o $EXPLOIT $EXPLOIT.c
+	fi
+
+	if [ -x $EXPLOIT ]; then
+		$EXPLOIT
+
+		if [ $? -eq 0 ]; then
+			exit
+		fi
+
+		source ./runcon-mmap_zero
+	fi
+fi
+
+echo "Exploit failed."
