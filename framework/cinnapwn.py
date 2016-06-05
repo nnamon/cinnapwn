@@ -48,9 +48,11 @@ class Cinnapwn:
     def run(self):
         self.loop.run_in_executor(self.burst_worker,
                                   self.run_http_server)
-        for i in modules.MODULES:
-            for j in self.targets:
+
+        for j in self.targets:
+            for i in modules.MODULES:
                 self.loop.call_soon(self.delay_cb, j, i)
+
         self.loop.run_forever()
 
     def delay_cb(self, target, obj):
@@ -69,7 +71,7 @@ def main():
                                      " for CDDC 2016")
     parser.add_argument("--targets", default="targets.json",
                         help="Specify a target file (in json)")
-    parser.add_argument("--interval", default=2.0, type=float, help="Tick rate")
+    parser.add_argument("--interval", default=10.0, type=float, help="Tick rate")
     args = parser.parse_args()
 
     cin = Cinnapwn(targetdisk=args.targets, detect_interval=args.interval)
