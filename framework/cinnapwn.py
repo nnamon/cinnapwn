@@ -11,6 +11,8 @@ import pwnlib.context
 import http.server
 import socketserver
 import os
+from colorama import Fore, Back, Style
+import time
 
 class Cinnapwn:
 
@@ -18,7 +20,7 @@ class Cinnapwn:
         with open(targetdisk, 'r') as target_file:
             self.targets = json.loads(target_file.read())
 
-        self.burst_worker = ThreadPoolExecutor(max_workers=attack_threads + 1)
+        self.burst_worker = ThreadPoolExecutor(max_workers=attack_threads + 2)
         self.loop = asyncio.get_event_loop()
         self.detect_interval = detect_interval
         self.hook_signal()
@@ -50,10 +52,43 @@ class Cinnapwn:
                                   self.run_http_server)
 
         for j in self.targets:
-            for i in modules.MODULES:
-                self.loop.call_soon(self.delay_cb, j, i)
+            if not j['ignore']:
+                for i in modules.MODULES:
+                    self.loop.call_soon(self.delay_cb, j, i)
+
+        self.loop.call_soon(self.status_work)
 
         self.loop.run_forever()
+
+    def status_work(self):
+        self.loop.run_in_executor(self.burst_worker, self.status_loop)
+
+    def status_loop(self):
+        x = self.targets
+        status = ""
+        for i in range(0, len(x), 3):
+            a1 = "%d. %s (%s)" % (i+1, x[i]['team'], x[i]['ip'])
+            if i + 1 < len(x):
+                a2 = "%d. %s (%s)" % (i+2, x[i+1]['team'], x[i+1]['ip'])
+            else:
+                a2 = ""
+            if i + 2 < len(x):
+                a3 = "%d. %s (%s)" % (i+3, x[i+2]['team'], x[i+2]['ip'])
+            else:
+                a3 = ""
+            a1f = Fore.GREEN if x[i]['compromised'] else Fore.RED
+            if i + 1 < len(x):
+                a2f = Fore.GREEN if x[i+1]['compromised'] else Fore.RED
+            if i + 2 < len(x):
+                a3f = Fore.GREEN if x[i+2]['compromised'] else Fore.RED
+            a1 = a1f + a1.ljust(45, " ") + Style.RESET_ALL
+            a2 = a2f + a2.ljust(45, " ") + Style.RESET_ALL
+            a3 = a3f + a3.ljust(20, " ") + Style.RESET_ALL
+            status += ("%s%s%s\n" % (a1, a2, a3))
+        open("status", 'w').write(status)
+        self.loop.call_later(self.detect_interval, self.status_work)
+
+
 
     def delay_cb(self, target, obj):
         self.loop.run_in_executor(self.burst_worker,
