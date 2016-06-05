@@ -14,7 +14,7 @@ import os
 
 class Cinnapwn:
 
-    def __init__(self, targetdisk, attack_threads=10, detect_interval=2):
+    def __init__(self, targetdisk, attack_threads=20, detect_interval=2):
         with open(targetdisk, 'r') as target_file:
             self.targets = json.loads(target_file.read())
 
@@ -62,7 +62,8 @@ class Cinnapwn:
     def detect_then_compromise(self, target, obj):
         detect_val = obj.detect(target) # Detect if a vulnerability is open
         if detect_val != None:
-            obj.compromise(target, detect_val)
+            if obj.compromise(target, detect_val):
+                target['compromised'] = True
         self.loop.call_later(self.detect_interval, self.delay_cb, target, obj)
 
 def main():
