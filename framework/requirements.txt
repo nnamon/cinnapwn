@@ -5,7 +5,7 @@ idna==2.1
 Mako==1.0.4
 MarkupSafe==0.23
 msgpack-python==0.4.7
-paramiko==2.0.0
+paramiko==2.10.1
 pluggy==0.3.1
 psutil==4.2.0
 pwntools==2.2.1
